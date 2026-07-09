@@ -12,6 +12,7 @@
 ## 자료
 | 파일 | 내용 |
 |---|---|
+| [slides.pptx](./slides.pptx) | 발표 슬라이드 (14장) |
 | [session-plan.md](./session-plan.md) | 60분 세션 진행안 (개념 → 시연 → 설치 → 실습 → 마무리) |
 | [handout-core-concepts.md](./handout-core-concepts.md) | 핵심 개념 핸드아웃: CLI · 에이전트 · MCP · 스킬 · 플러그인을 "AI 신입사원" 비유로 정리 |
 
