@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MCP & Skill 실습 - 사내 GitHub 자산 연동하기</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@300;400;600;700;800&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --bg-dark: #0a0d14;
+      --card-bg: rgba(22, 28, 45, 0.7);
+      --card-border: rgba(255, 255, 255, 0.1);
+      --primary-cyan: #00f2fe;
+      --primary-blue: #4facfe;
+      --accent-purple: #7f00ff;
+      --accent-pink: #ff007f;
+      --text-main: #f0f4f8;
+      --text-muted: #94a3b8;
+      --code-bg: #111827;
+      --success: #10b981;
+      --warning: #f59e0b;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+      background-image: 
+        radial-gradient(circle at 15% 15%, rgba(79, 172, 254, 0.15) 0%, transparent 40%),
+        radial-gradient(circle at 85% 85%, rgba(127, 0, 255, 0.15) 0%, transparent 40%);
+    }
+
+    /* Deck Layout */
+    .deck-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Slides Container */
+    .slides-wrapper {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .slide {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      padding: 3rem 5rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(20px) scale(0.98);
+      transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 1;
+    }
+
+    .slide.active {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0) scale(1);
+      z-index: 2;
+    }
+
+    /* Typography & Visual Elements */
+    .slide-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(79, 172, 254, 0.15);
+      border: 1px solid rgba(79, 172, 254, 0.3);
+      color: var(--primary-cyan);
+      padding: 0.4rem 1rem;
+      border-radius: 9999px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 1rem;
+      width: fit-content;
+    }
+
+    h1.title-main {
+      font-family: 'Outfit', sans-serif;
+      font-size: 3.2rem;
+      font-weight: 800;
+      line-height: 1.15;
+      background: linear-gradient(135deg, #ffffff 0%, #a5f3fc 50%, #60a5fa 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 1.2rem;
+    }
+
+    h2.slide-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 2.4rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 1.5rem;
+    }
+
+    p.subtitle {
+      font-size: 1.25rem;
+      color: var(--text-muted);
+      max-width: 800px;
+      line-height: 1.6;
+      margin-bottom: 2rem;
+    }
+
+    /* Grid Layouts */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      align-items: center;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+    }
+
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1.25rem;
+    }
+
+    /* Card Component */
+    .card {
+      background: var(--card-bg);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--card-border);
+      border-radius: 1rem;
+      padding: 1.75rem;
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+      transition: all 0.3s ease;
+    }
+
+    .card:hover {
+      border-color: rgba(79, 172, 254, 0.4);
+      transform: translateY(-4px);
+      box-shadow: 0 12px 40px 0 rgba(79, 172, 254, 0.15);
+    }
+
+    .card-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 0.75rem;
+      background: linear-gradient(135deg, rgba(79, 172, 254, 0.2), rgba(127, 0, 255, 0.2));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      color: var(--primary-cyan);
+      margin-bottom: 1rem;
+    }
+
+    .card h3 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      color: #fff;
+    }
+
+    .card p {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    /* Code Block Styling */
+    .code-block {
+      background: var(--code-bg);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 0.75rem;
+      padding: 1.25rem;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.9rem;
+      color: #e2e8f0;
+      overflow-x: auto;
+      position: relative;
+      line-height: 1.5;
+    }
+
+    .code-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 0.75rem;
+      margin-bottom: 0.75rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .copy-btn {
+      background: rgba(255, 255, 255, 0.1);
+      border: none;
+      color: #fff;
+      padding: 0.25rem 0.6rem;
+      border-radius: 0.375rem;
+      cursor: pointer;
+      font-size: 0.75rem;
+      transition: background 0.2s;
+    }
+
+    .copy-btn:hover {
+      background: var(--primary-blue);
+    }
+
+    /* Prompt Box */
+    .prompt-box {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(6, 182, 212, 0.1));
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      border-radius: 0.75rem;
+      padding: 1.25rem;
+      margin-top: 1rem;
+    }
+
+    .prompt-box header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 700;
+      color: var(--success);
+      font-size: 0.9rem;
+      margin-bottom: 0.5rem;
+    }
+
+    /* Badges & Steps */
+    .step-number {
+      display: inline-flex;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--primary-blue);
+      color: #fff;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.85rem;
+      margin-right: 0.5rem;
+    }
+
+    /* Footer & Controls */
+    .deck-footer {
+      height: 65px;
+      background: rgba(10, 13, 20, 0.8);
+      backdrop-filter: blur(10px);
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 3rem;
+      z-index: 10;
+    }
+
+    .progress-bar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--primary-cyan), var(--accent-purple));
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+
+    .nav-controls {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .nav-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #fff;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .nav-btn:hover {
+      background: var(--primary-blue);
+      border-color: var(--primary-cyan);
+      transform: scale(1.05);
+    }
+
+    .slide-counter {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      min-width: 60px;
+      text-align: center;
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: var(--text-main);
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      font-size: 0.85rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.2s;
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.18);
+    }
+
+    /* Grid Overview Modal */
+    .overview-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(10, 13, 20, 0.95);
+      backdrop-filter: blur(20px);
+      z-index: 100;
+      padding: 3rem;
+      display: none;
+      overflow-y: auto;
+    }
+
+    .overview-modal.active {
+      display: block;
+    }
+
+    .overview-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.5rem;
+      margin-top: 2rem;
+    }
+
+    .overview-item {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 0.75rem;
+      padding: 1.25rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .overview-item:hover {
+      border-color: var(--primary-cyan);
+      transform: translateY(-3px);
+    }
+
+    .overview-item h4 {
+      font-size: 0.95rem;
+      color: #fff;
+      margin-bottom: 0.5rem;
+    }
+
+    .overview-item p {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+
+<div class="deck-container">
+  <div class="progress-bar" id="progressBar"></div>
+
+  <!-- Slides Wrapper -->
+  <div class="slides-wrapper">
+
+    <!-- SLIDE 1: Title Slide -->
+    <div class="slide active" id="slide-1">
+      <div class="slide-tag"><i class="fa-solid fa-bolt"></i> 제주연구원 인공지능연구회 소모임</div>
+      <h1 class="title-main">MCP로 그룹웨어/슬랙 연결 &<br>나만의 스킬(Skill) 만들기</h1>
+      <p class="subtitle">사내 GitHub 자산을 각자의 컴퓨터로 복사해 AI 에이전트의 손발로 직접 작동시키는 실습 세션</p>
+      
+      <div class="grid-3" style="margin-top: 2rem;">
+        <div class="card">
+          <div class="card-icon"><i class="fa-solid fa-calendar-day"></i></div>
+          <h3>일시 & 장소</h3>
+          <p>8월 6일(목) 17:00 - 18:00<br>노꼬메 회의실</p>
+        </div>
+        <div class="card">
+          <div class="card-icon"><i class="fa-solid fa-laptop-code"></i></div>
+          <h3>실습 목표</h3>
+          <p>내 PC에 4대 연결 자산 클론 &<br>나만의 Custom Skill 작성</p>
+        </div>
+        <div class="card">
+          <div class="card-icon"><i class="fa-solid fa-cubes"></i></div>
+          <h3>대상 서비스</h3>
+          <p>슬랙(Slack) · 먼데이(Monday)<br>메일(Mail) · 그룹웨어(GW)</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 2: Agenda & Goal -->
+    <div class="slide" id="slide-2">
+      <div class="slide-tag"><i class="fa-solid fa-list-check"></i> 세션 타임테이블</div>
+      <h2 class="slide-title">오늘 60분 동안 무엇을 하나요?</h2>
+      
+      <div class="grid-2">
+        <div class="card">
+          <h3><span class="step-number">1</span> 개념 타임 (10분)</h3>
+          <p>• MCP(Model Context Protocol)와 Skill의 차이점<br>• 사내 GitHub 자산 연동 구조 이해</p>
+          <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1); margin:1rem 0;">
+          <h3><span class="step-number">2</span> 환경 세팅 (15분)</h3>
+          <p>• 깃허브 자산 4종 내 노트북으로 Clone<br>• `.env` 환경변수에 인증 자격증명 등록하기</p>
+        </div>
+
+        <div class="card">
+          <h3><span class="step-number">3</span> 4대 서비스 연결 실습 (20분)</h3>
+          <p>• 메일 검색/요약, 슬랙 채널 스레드 읽기<br>• 먼데이 보드 현황, 그룹웨어 결재함/출근 대조</p>
+          <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1); margin:1rem 0;">
+          <h3><span class="step-number">4</span> 나만의 Custom Skill 만들기 (15분)</h3>
+          <p>• `SKILL.md` 작성법 배우기<br>• 내 업무 1가지 스킬로 포장해보기 & Q&A</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 3: MCP vs Skill -->
+    <div class="slide" id="slide-3">
+      <div class="slide-tag"><i class="fa-solid fa-brain"></i> 핵심 개념 재정립</div>
+      <h2 class="slide-title">MCP vs Skill: 무엇이 다른가요?</h2>
+      
+      <div class="grid-2">
+        <div class="card" style="border-top: 4px solid var(--primary-cyan);">
+          <div class="card-icon"><i class="fa-solid fa-network-wired"></i></div>
+          <h3>MCP (Model Context Protocol)</h3>
+          <p style="font-weight:600; color:#fff; margin-bottom:0.75rem;">"사내 시스템 실시간 API 출입증"</p>
+          <ul style="color:var(--text-muted); font-size:0.9rem; line-height:1.7; padding-left:1.2rem;">
+            <li>클라이언트-서버 구조로 표준 프로토콜 통신</li>
+            <li>슬랙, 먼데이, 메일 서버의 최신 데이터를 실시간으로 가져옴</li>
+            <li>에이전트가 호출 가능한 Tool 함수 제공</li>
+          </ul>
+        </div>
+
+        <div class="card" style="border-top: 4px solid var(--accent-purple);">
+          <div class="card-icon"><i class="fa-solid fa-book"></i></div>
+          <h3>Skill (스킬)</h3>
+          <p style="font-weight:600; color:#fff; margin-bottom:0.75rem;">"AI 전용 업무 매뉴얼 (`SKILL.md`)"</p>
+          <ul style="color:var(--text-muted); font-size:0.9rem; line-height:1.7; padding-left:1.2rem;">
+            <li>CLI 도구나 셸 스크립트 실행 방법과 규칙 정의</li>
+            <li>`gw approvals`, `hwp2pdf` 등 내 컴퓨터 명령 실행</li>
+            <li>간단한 Markdown 파일 수정으로 누구나 작성 가능</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 4: GitHub Assets Intro -->
+    <div class="slide" id="slide-4">
+      <div class="slide-tag"><i class="fa-brands fa-github"></i> 사내 GitHub 자산 4종</div>
+      <h2 class="slide-title">오늘 내 컴퓨터로 가져올 자산들</h2>
+      
+      <div class="grid-4">
+        <div class="card">
+          <div class="card-icon"><i class="fa-solid fa-building"></i></div>
+          <h3>ji-gw-ai</h3>
+          <p><b>그룹웨어 제어 CLI/스킬</b></p>
+          <p style="font-size:0.8rem; margin-top:0.5rem;">결재함 조회, 지각일 대조, 근태 기안전 준비</p>
+        </div>
+
+        <div class="card">
+          <div class="card-icon"><i class="fa-brands fa-slack"></i></div>
+          <h3>ji-slack-admin</h3>
+          <p><b>슬랙 운영 MCP/스크립트</b></p>
+          <p style="font-size:0.8rem; margin-top:0.5rem;">채널 검색, 공지 전송, 스레드 요약 읽기</p>
+        </div>
+
+        <div class="card">
+          <div class="card-icon"><i class="fa-solid fa-kanban"></i></div>
+          <h3>ji-monday-admin</h3>
+          <p><b>먼데이(Monday) 연동</b></p>
+          <p style="font-size:0.8rem; margin-top:0.5rem;">프로젝트 보드 태스크 상태, 담당자 확인</p>
+        </div>
+
+        <div class="card">
+          <div class="card-icon"><i class="fa-solid fa-envelope"></i></div>
+          <h3>mail-skill</h3>
+          <p><b>메일 검색/답장 작성</b></p>
+          <p style="font-size:0.8rem; margin-top:0.5rem;">Local/Gmail/IMAP 메일 검색 및 드래프트</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 5: Practice Step 1 - Clone -->
+    <div class="slide" id="slide-5">
+      <div class="slide-tag"><i class="fa-solid fa-terminal"></i> 실습 1단계: Clone & Install</div>
+      <h2 class="slide-title">GitHub 자산 내 노트북으로 가져오기</h2>
+      
+      <p style="color: var(--text-muted); margin-bottom: 1rem;">터미널(Terminal)을 열고 아래 명령어를 순서대로 실행하세요:</p>
+
+      <div class="code-block">
+        <div class="code-header">
+          <span>Bash - Repository Clone & Set Up</span>
+          <button class="copy-btn" onclick="copyCode(this)">복사</button>
+        </div>
+        <pre><code># 1. 개발 작업 폴더 이동
+mkdir -p ~/dev && cd ~/dev
+
+# 2. 그룹웨어 CLI 클론 및 uv 설치
+git clone https://github.com/z0nam/ji-gw-ai.git
+cd ji-gw-ai && uv sync && uv tool install --editable . && cd ..
+
+# 3. 슬랙, 먼데이, 메일 스킬 클론
+git clone https://github.com/z0nam/ji-slack-admin.git
+git clone https://github.com/z0nam/ji-monday-admin.git
+git clone https://github.com/z0nam/mail-skill.git</code></pre>
+      </div>
+    </div>
+
+    <!-- SLIDE 6: Practice Step 2 - Security & Credentials -->
+    <div class="slide" id="slide-6">
+      <div class="slide-tag"><i class="fa-solid fa-shield-halved"></i> 실습 2단계: 자격증명 (.env)</div>
+      <h2 class="slide-title">안전하게 인증 정보 설정하기</h2>
+      
+      <div class="grid-2">
+        <div>
+          <p style="color:var(--text-muted); line-height:1.6; margin-bottom:1rem;">
+            비밀번호, 토큰, API 키는 코드에 직접 적으면 <b>절대로 안 됩니다.</b><br>
+            각 프로젝트의 <code>.env.example</code>을 복사하여 <code>.env</code> 파일로 만듭니다.
+          </p>
+          <div class="code-block">
+            <div class="code-header">
+              <span>.env 설정 명령어</span>
+              <button class="copy-btn" onclick="copyCode(this)">복사</button>
+            </div>
+            <pre><code># 예: ji-gw-ai 설정
+cd ~/dev/ji-gw-ai
+cp .env.example .env
+
+# .env 수정 (본인 GW 아이디/비밀번호)
+nano .env  # 또는 VS Code로 편집</code></pre>
+          </div>
+        </div>
+
+        <div class="card" style="background: rgba(245, 158, 11, 0.1); border-color: rgba(245, 158, 11, 0.3);">
+          <div class="card-icon" style="color: var(--warning);"><i class="fa-solid fa-triangle-exclamation"></i></div>
+          <h3 style="color: var(--warning);">보안 필수 규칙</h3>
+          <ul style="color:var(--text-main); font-size:0.9rem; line-height:1.7; padding-left:1.2rem; margin-top:0.5rem;">
+            <li><b><code>.env</code>는 깃허브 금지</b> (이미 .gitignore 등록됨)</li>
+            <li>에이전트에게 비밀번호를 직접 말하지 말고 <code>.env</code>로 전달</li>
+            <li>실습 시 승인형 모드 사용 권장</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 7: Mail Skill Demo -->
+    <div class="slide" id="slide-7">
+      <div class="slide-tag"><i class="fa-solid fa-envelope"></i> 서비스 연동 ①</div>
+      <h2 class="slide-title">메일 (Mail Skill) 직접 써보기</h2>
+      
+      <p style="color:var(--text-muted); margin-bottom:1rem;">메일함 검색 및 요약, 답장 드래프트 작성을 AI 에이전트에게 요청해보세요.</p>
+
+      <div class="prompt-box">
+        <header><i class="fa-solid fa-comment-dots"></i> 에이전트에 입력할 프롬프트 예시</header>
+        <p style="font-size: 1.1rem; color: #fff; font-weight: 600;">
+          "최근 받은 메일 중에서 '소모임' 관련 메일 찾아서 핵심 내용을 3줄로 요약해줘."
+        </p>
+      </div>
+
+      <div class="card" style="margin-top: 1.5rem;">
+        <h3>내부 동작 방식</h3>
+        <p><code>mail</code> 스킬이 실행되어 로컬 메일 DB 또는 IMAP/Gmail API를 조회하고 읽지 않은 메일의 제목, 발신자, 본문을 파싱하여 에이전트에게 전달합니다.</p>
+      </div>
+    </div>
+
+    <!-- SLIDE 8: Slack MCP Demo -->
+    <div class="slide" id="slide-8">
+      <div class="slide-tag"><i class="fa-brands fa-slack"></i> 서비스 연동 ②</div>
+      <h2 class="slide-title">슬랙 (Slack MCP) 직접 써보기</h2>
+      
+      <p style="color:var(--text-muted); margin-bottom:1rem;">claude.ai Slack Connector 또는 Slack MCP로 사내 채널을 읽고 작성합니다.</p>
+
+      <div class="prompt-box">
+        <header><i class="fa-solid fa-comment-dots"></i> 에이전트에 입력할 프롬프트 예시</header>
+        <p style="font-size: 1.1rem; color: #fff; font-weight: 600;">
+          "오늘 #인공지능연구회 채널에 올라온 주요 스레드 메시지를 다 정리해줘."
+        </p>
+      </div>
+
+      <div class="grid-2" style="margin-top: 1.5rem;">
+        <div class="card">
+          <h3>채널 읽기 & 검색</h3>
+          <p>슬랙 채널의 주고받은 대화 내용을 실시간으로 파악하여 미팅 안건이나 공유 자료를 요약합니다.</p>
+        </div>
+        <div class="card">
+          <h3>공지 작성 (승인 필수)</h3>
+          <p>에이전트가 작성한 공지문을 채널에 올리기 직전, 사용자에게 최종 확인 승인(Prompt)을 요청합니다.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 9: Monday Admin Demo -->
+    <div class="slide" id="slide-9">
+      <div class="slide-tag"><i class="fa-solid fa-kanban"></i> 서비스 연동 ③</div>
+      <h2 class="slide-title">먼데이 (Monday Admin) 연동하기</h2>
+      
+      <p style="color:var(--text-muted); margin-bottom:1rem;">먼데이(Monday.com) API를 연동하여 프로젝트 보드 항목과 지연 태스크를 점검합니다.</p>
+
+      <div class="prompt-box">
+        <header><i class="fa-solid fa-comment-dots"></i> 에이전트에 입력할 프롬프트 예시</header>
+        <p style="font-size: 1.1rem; color: #fff; font-weight: 600;">
+          "이번 주 '7월 연구과제' 보드에서 '진행 중'인 태스크 목록과 담당자를 확인해줘."
+        </p>
+      </div>
+
+      <div class="code-block" style="margin-top: 1.5rem;">
+        <div class="code-header"><span>.env 설정 체크 (ji-monday-admin)</span></div>
+        <pre><code>MONDAY_API_TOKEN="your_monday_api_v2_token_here"</code></pre>
+      </div>
+    </div>
+
+    <!-- SLIDE 10: GW CLI Demo -->
+    <div class="slide" id="slide-10">
+      <div class="slide-tag"><i class="fa-solid fa-building"></i> 서비스 연동 ④</div>
+      <h2 class="slide-title">그룹웨어 (GW CLI/Skill) 활용하기</h2>
+      
+      <p style="color:var(--text-muted); margin-bottom:1rem;">`gw` 명령어로 결재함 읽기, 출근기록 대조, 근태 작성까지 손쉽게 처리합니다.</p>
+
+      <div class="grid-2">
+        <div>
+          <div class="prompt-box">
+            <header><i class="fa-solid fa-comment-dots"></i> 에이전트 요청 예시</header>
+            <p style="font-size: 1rem; color: #fff; font-weight: 600;">
+              "gw info 상태 확인하고, 내 결재함에서 미결건이 있는지 조회해줘."
+            </p>
+          </div>
+          <div class="prompt-box" style="margin-top: 1rem;">
+            <header><i class="fa-solid fa-comment-dots"></i> 출근 대조 요청 예시</header>
+            <p style="font-size: 1rem; color: #fff; font-weight: 600;">
+              "gw late-check로 지난 달 지각일과 기안된 지참 내역을 대조해줘."
+            </p>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>gw 주요 명령어 모음</h3>
+          <ul style="color:var(--text-muted); font-size:0.85rem; line-height:1.8; padding-left:1rem;">
+            <li><code>gw info</code> : 세션 접속 상태 점검</li>
+            <li><code>gw approvals</code> : 결재함 리스트 읽기</li>
+            <li><code>gw draft ...</code> : 지참/연가 근태 <b>기안전</b> 작성</li>
+            <li><code>gw late-check</code> : 출근기록 vs 지참 결재 대조</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 11: Custom Skill Creation -->
+    <div class="slide" id="slide-11">
+      <div class="slide-tag"><i class="fa-solid fa-wand-magic-sparkles"></i> 실습 3단계</div>
+      <h2 class="slide-title">나만의 Custom Skill 만들기</h2>
+      
+      <p style="color:var(--text-muted); margin-bottom:1rem;">반복되는 업무는 <code>SKILL.md</code> 파일 하나로 포장하세요!</p>
+
+      <div class="grid-2">
+        <div class="code-block">
+          <div class="code-header"><span>~/.claude/skills/my-briefing/SKILL.md</span><button class="copy-btn" onclick="copyCode(this)">복사</button></div>
+          <pre><code>---
+name: my-briefing
+description: 아침 일과 시작 시 결재함과 메일을 한눈에 요약하는 스킬
+---
+
+# 모닝 브리핑 스킬
+
+1. `gw approvals`를 실행하여 새로운 결재건 확인
+2. `mail` 스킬로 읽지 않은 메일 수신함 확인
+3. 결과를 종합하여 오늘 할 일 요약 출력</code></pre>
+        </div>
+
+        <div class="card">
+          <h3>스킬 만드는 3단계</h3>
+          <ol style="color:var(--text-muted); font-size:0.9rem; line-height:2; padding-left:1.2rem;">
+            <li><b>폴더 생성</b>: <code>~/.claude/skills/스킬명/</code></li>
+            <li><b><code>SKILL.md</code> 작성</b>: YAML Frontmatter (name, description) + 프롬프트 지침</li>
+            <li><b>에이전트에 테스트</b>: "내 스킬 실행해줘" 입력!</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 12: Wrap up & QA -->
+    <div class="slide" id="slide-12">
+      <div class="slide-tag"><i class="fa-solid fa-flag-checkered"></i> 마무리 & Q&A</div>
+      <h2 class="slide-title">오늘 배운 내용 총정리</h2>
+      
+      <div class="grid-3">
+        <div class="card">
+          <div class="card-icon" style="color:var(--success);"><i class="fa-solid fa-check"></i></div>
+          <h3>1. 4대 자산 내 컴퓨터 연동</h3>
+          <p>GitHub 클론 + <code>.env</code> 자격증명으로 슬랙, 먼데이, 메일, 그룹웨어 조작 준비 완료</p>
+        </div>
+
+        <div class="card">
+          <div class="card-icon" style="color:var(--primary-blue);"><i class="fa-solid fa-gears"></i></div>
+          <h3>2. 에이전트 연동 실행</h3>
+          <p>한국어 문장으로 지시하면 내 컴퓨터에서 CLI/MCP가 실시간으로 결과 처리</p>
+        </div>
+
+        <div class="card">
+          <div class="card-icon" style="color:var(--accent-purple);"><i class="fa-solid fa-rocket"></i></div>
+          <h3>3. 나만의 Custom Skill</h3>
+          <p><code>SKILL.md</code>로 나만의 반복 업무를 매뉴얼화하여 팀과 공유 가능</p>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top: 2rem; background: linear-gradient(135deg, rgba(79,172,254,0.1), rgba(127,0,255,0.1)); text-align: center;">
+        <h3 style="font-size: 1.4rem;">🎉 수고 많으셨습니다! Q&A 시간</h3>
+        <p style="margin-top: 0.5rem; color: var(--text-muted);">질문이나 설치 중 막히는 부분은 언제든 이야기해주세요.</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Deck Footer -->
+  <footer class="deck-footer">
+    <div style="display:flex; align-items:center; gap:1rem;">
+      <button class="btn-secondary" onclick="toggleOverview()"><i class="fa-solid fa-grid-2"></i> 전체 목차</button>
+      <span style="font-size:0.85rem; color:var(--text-muted);">제주연구원 인공지능연구회 소모임</span>
+    </div>
+
+    <div class="nav-controls">
+      <button class="nav-btn" onclick="prevSlide()"><i class="fa-solid fa-chevron-left"></i></button>
+      <span class="slide-counter" id="slideCounter">1 / 12</span>
+      <button class="nav-btn" onclick="nextSlide()"><i class="fa-solid fa-chevron-right"></i></button>
+      <button class="nav-btn" onclick="toggleFullscreen()" title="전체화면"><i class="fa-solid fa-expand"></i></button>
+    </div>
+  </footer>
+</div>
+
+<!-- Overview Modal -->
+<div class="overview-modal" id="overviewModal">
+  <div style="display:flex; justify-content:space-between; align-items:center;">
+    <h2 style="color:#fff; font-family:'Outfit';">슬라이드 전체 보기</h2>
+    <button class="btn-secondary" onclick="toggleOverview()"><i class="fa-solid fa-xmark"></i> 닫기</button>
+  </div>
+  <div class="overview-grid" id="overviewGrid"></div>
+</div>
+
+<script>
+  let currentSlide = 1;
+  const totalSlides = document.querySelectorAll('.slide').length;
+
+  function updateSlide() {
+    document.querySelectorAll('.slide').forEach((slide, idx) => {
+      slide.classList.toggle('active', idx + 1 === currentSlide);
+    });
+
+    // Update Counter & Progress
+    document.getElementById('slideCounter').innerText = `${currentSlide} / ${totalSlides}`;
+    const progressPercent = ((currentSlide - 1) / (totalSlides - 1)) * 100;
+    document.getElementById('progressBar').style.width = `${progressPercent}%`;
+  }
+
+  function nextSlide() {
+    if (currentSlide < totalSlides) {
+      currentSlide++;
+      updateSlide();
+    }
+  }
+
+  function prevSlide() {
+    if (currentSlide > 1) {
+      currentSlide--;
+      updateSlide();
+    }
+  }
+
+  function goToSlide(slideNum) {
+    currentSlide = slideNum;
+    updateSlide();
+    document.getElementById('overviewModal').classList.remove('active');
+  }
+
+  function toggleFullscreen() {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen();
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      }
+    }
+  }
+
+  function toggleOverview() {
+    const modal = document.getElementById('overviewModal');
+    const grid = document.getElementById('overviewGrid');
+
+    if (!modal.classList.contains('active')) {
+      grid.innerHTML = '';
+      document.querySelectorAll('.slide').forEach((slide, idx) => {
+        const titleEl = slide.querySelector('.slide-title') || slide.querySelector('.title-main');
+        const titleText = titleEl ? titleEl.innerText.replace('\n', ' ') : `Slide ${idx + 1}`;
+        
+        const item = document.createElement('div');
+        item.className = 'overview-item';
+        item.innerHTML = `<h4>${idx + 1}. ${titleText}</h4><p>클릭시 이동</p>`;
+        item.onclick = () => goToSlide(idx + 1);
+        grid.appendChild(item);
+      });
+      modal.classList.add('active');
+    } else {
+      modal.classList.remove('active');
+    }
+  }
+
+  function copyCode(btn) {
+    const code = btn.parentElement.nextElementSibling.innerText;
+    navigator.clipboard.writeText(code).then(() => {
+      btn.innerText = '복사됨!';
+      setTimeout(() => { btn.innerText = '복사'; }, 2000);
+    });
+  }
+
+  // Keyboard navigation
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === 'Space') {
+      nextSlide();
+    } else if (e.key === 'ArrowLeft') {
+      prevSlide();
+    } else if (e.key === 'Escape') {
+      document.getElementById('overviewModal').classList.remove('active');
+    }
+  });
+
+  // Touch swipe support
+  let touchStartX = 0;
+  document.addEventListener('touchstart', e => touchStartX = e.changedTouches[0].screenX);
+  document.addEventListener('touchend', e => {
+    let touchEndX = e.changedTouches[0].screenX;
+    if (touchStartX - touchEndX > 50) nextSlide();
+    if (touchEndX - touchStartX > 50) prevSlide();
+  });
+
+  updateSlide();
+</script>
+
+</body>
+</html>
