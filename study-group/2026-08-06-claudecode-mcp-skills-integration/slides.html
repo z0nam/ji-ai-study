@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>*,*::before,*::after{box-sizing:border-box}</style>
+<title>MCP·스킬 실습 — 제주연구원 AI연구회</title>
+<style>
+  :root {
+    --paper: #eef2f7;
+    --card: #ffffff;
+    --card-2: #f6f9fc;
+    --ink: #14223b;
+    --ink-soft: #3c4c68;
+    --muted: #64758f;
+    --line: #d5deea;
+    --line-soft: #e4ebf3;
+    --accent: #ec5a2c;      /* signal / live / action */
+    --accent-ink: #c8410f;
+    --wire: #1f8ea6;        /* schematic cyan — links/wires */
+    --wire-soft: #d7edf1;
+    --cover: #0d1a2e;
+    --cover-2: #10233c;
+    --cover-ink: #eaf1fb;
+    --cover-grid: rgba(120,165,215,0.10);
+    --good: #2e9e6b;
+    --shadow: 0 1px 0 rgba(20,34,59,.04), 0 12px 34px -18px rgba(20,34,59,.28);
+    --mono: "SF Mono", "JetBrains Mono", "Cascadia Code", ui-monospace, Menlo, Consolas, monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #0b1322;
+      --card: #131f33;
+      --card-2: #172740;
+      --ink: #e7ecf4;
+      --ink-soft: #b7c3d6;
+      --muted: #8496b0;
+      --line: #263650;
+      --line-soft: #1d2c44;
+      --accent: #ff6a3c;
+      --accent-ink: #ff8a63;
+      --wire: #4fc2d6;
+      --wire-soft: #12303a;
+      --cover: #070e1a;
+      --cover-2: #0c1a2e;
+      --cover-grid: rgba(120,165,215,0.09);
+      --shadow: 0 1px 0 rgba(0,0,0,.3), 0 18px 40px -22px rgba(0,0,0,.7);
+    }
+  }
+  :root[data-theme="light"] {
+    --paper:#eef2f7;--card:#fff;--card-2:#f6f9fc;--ink:#14223b;--ink-soft:#3c4c68;--muted:#64758f;
+    --line:#d5deea;--line-soft:#e4ebf3;--accent:#ec5a2c;--accent-ink:#c8410f;--wire:#1f8ea6;--wire-soft:#d7edf1;
+    --cover:#0d1a2e;--cover-2:#10233c;--cover-ink:#eaf1fb;--cover-grid:rgba(120,165,215,0.10);
+    --shadow:0 1px 0 rgba(20,34,59,.04),0 12px 34px -18px rgba(20,34,59,.28);
+  }
+  :root[data-theme="dark"] {
+    --paper:#0b1322;--card:#131f33;--card-2:#172740;--ink:#e7ecf4;--ink-soft:#b7c3d6;--muted:#8496b0;
+    --line:#263650;--line-soft:#1d2c44;--accent:#ff6a3c;--accent-ink:#ff8a63;--wire:#4fc2d6;--wire-soft:#12303a;
+    --cover:#070e1a;--cover-2:#0c1a2e;--cover-ink:#eaf1fb;--cover-grid:rgba(120,165,215,0.09);
+    --shadow:0 1px 0 rgba(0,0,0,.3),0 18px 40px -22px rgba(0,0,0,.7);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--sans);
+    background: var(--paper);
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.55;
+  }
+
+  .deck {
+    height: 100vh;
+    overflow-y: scroll;
+    scroll-snap-type: y mandatory;
+    scroll-behavior: smooth;
+  }
+  @media (prefers-reduced-motion: reduce) { .deck { scroll-behavior: auto; } }
+
+  .slide {
+    scroll-snap-align: start;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: clamp(28px, 5vw, 74px);
+    padding-right: clamp(28px, 5vw, 96px);
+    position: relative;
+  }
+  .slide-inner { width: 100%; max-width: 1060px; margin: 0 auto; }
+
+  /* ---- chrome: progress rail + meta + counter ---- */
+  .rail {
+    position: fixed; left: 0; top: 0; bottom: 0; width: 4px;
+    background: var(--line-soft); z-index: 40;
+  }
+  .rail-fill { position: absolute; top: 0; left: 0; width: 100%; height: 0%;
+    background: linear-gradient(180deg, var(--accent), var(--wire)); transition: height .25s ease; }
+  .meta {
+    position: fixed; top: 18px; right: 22px; z-index: 40;
+    font-family: var(--mono); font-size: 11px; letter-spacing: .06em;
+    color: var(--muted); text-align: right; text-transform: uppercase;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .counter { font-weight: 600; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+  .theme-btn {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .06em;
+    background: var(--card); color: var(--ink-soft); border: 1px solid var(--line);
+    border-radius: 6px; padding: 4px 8px; cursor: pointer; text-transform: uppercase;
+  }
+  .theme-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .hint {
+    position: fixed; bottom: 16px; right: 24px; z-index: 40;
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: .05em; color: var(--muted);
+  }
+  .hint b { color: var(--ink-soft); }
+
+  /* ---- shared type ---- */
+  .eyebrow {
+    font-family: var(--mono); font-size: clamp(11px, 1.1vw, 13px);
+    letter-spacing: .22em; text-transform: uppercase; color: var(--accent);
+    display: inline-flex; align-items: center; gap: 12px; margin-bottom: 20px; font-weight: 600;
+  }
+  .eyebrow::before { content: ""; width: 26px; height: 2px; background: var(--accent); display: inline-block; }
+  h1.title {
+    font-family: var(--mono); font-weight: 700; letter-spacing: -.02em;
+    font-size: clamp(30px, 5.4vw, 60px); line-height: 1.04; margin: 0 0 18px;
+    text-wrap: balance; color: var(--ink);
+  }
+  h2.headline {
+    font-family: var(--mono); font-weight: 700; letter-spacing: -.015em;
+    font-size: clamp(25px, 3.9vw, 44px); line-height: 1.1; margin: 0 0 26px;
+    text-wrap: balance; color: var(--ink);
+  }
+  .lead { font-size: clamp(16px, 1.7vw, 20px); color: var(--ink-soft); max-width: 60ch; }
+  .sub { font-size: clamp(15px, 1.7vw, 20px); color: var(--muted); max-width: 62ch; margin-top: 4px; }
+
+  .badge {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase;
+    padding: 4px 10px; border-radius: 999px; font-weight: 600; display: inline-block; vertical-align: middle;
+  }
+  .badge.all   { background: color-mix(in srgb, var(--good) 15%, transparent); color: var(--good); border: 1px solid color-mix(in srgb, var(--good) 35%, transparent); }
+  .badge.live  { background: color-mix(in srgb, var(--accent) 15%, transparent); color: var(--accent-ink); border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent); }
+  .badge.mac   { background: color-mix(in srgb, var(--wire) 15%, transparent); color: var(--wire); border: 1px solid color-mix(in srgb, var(--wire) 35%, transparent); }
+  .badge.deep  { background: color-mix(in srgb, var(--muted) 16%, transparent); color: var(--ink-soft); border: 1px solid var(--line); }
+
+  /* ---- cards ---- */
+  .grid { display: grid; gap: 16px; }
+  .g2 { grid-template-columns: repeat(2, 1fr); }
+  .g3 { grid-template-columns: repeat(3, 1fr); }
+  @media (max-width: 780px) { .g2, .g3 { grid-template-columns: 1fr; } }
+
+  .card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+    padding: 20px 22px; box-shadow: var(--shadow);
+  }
+  .card h3 {
+    font-family: var(--mono); font-size: 15px; margin: 0 0 8px; letter-spacing: -.01em;
+    color: var(--ink); display: flex; align-items: center; gap: 9px;
+  }
+  .card p { margin: 0; color: var(--ink-soft); font-size: 15px; }
+  .num {
+    font-family: var(--mono); font-size: 12px; font-weight: 700; color: var(--accent);
+    border: 1.5px solid var(--accent); border-radius: 6px; width: 24px; height: 24px;
+    display: inline-flex; align-items: center; justify-content: center; flex: none;
+  }
+
+  /* ---- code blocks ---- */
+  .code {
+    position: relative; background: var(--cover); border: 1px solid var(--line);
+    border-radius: 10px; margin: 14px 0; overflow: hidden;
+  }
+  .code-head {
+    display: flex; align-items: center; gap: 8px; padding: 8px 12px;
+    border-bottom: 1px solid rgba(255,255,255,.07); font-family: var(--mono);
+    font-size: 11px; letter-spacing: .05em; color: #7f93b3; text-transform: uppercase;
+  }
+  .code-head .dot { width: 9px; height: 9px; border-radius: 50%; background: #33456a; }
+  .code-head .fname { margin-left: 4px; }
+  .code pre {
+    margin: 0; padding: 14px 16px; overflow-x: auto;
+    font-family: var(--mono); font-size: clamp(12.5px, 1.35vw, 15px); line-height: 1.7;
+    color: #dbe6f7;
+  }
+  .code pre .c { color: #7f93b3; }               /* comment */
+  .code pre .k { color: #ff8a63; font-weight: 600; } /* command/keyword */
+  .code pre .s { color: #6fd0c0; }               /* string/arg */
+  .copy {
+    position: absolute; top: 7px; right: 8px; z-index: 2;
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: .05em; text-transform: uppercase;
+    background: rgba(255,255,255,.08); color: #cdd9ee; border: 1px solid rgba(255,255,255,.14);
+    border-radius: 6px; padding: 4px 8px; cursor: pointer;
+  }
+  .copy:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  ul.check { list-style: none; padding: 0; margin: 0; display: grid; gap: 11px; }
+  ul.check li { display: flex; gap: 12px; align-items: flex-start; font-size: 16px; color: var(--ink-soft); }
+  ul.check li::before {
+    content: "▸"; color: var(--accent); font-family: var(--mono); font-weight: 700; flex: none; margin-top: 1px;
+  }
+  ul.check li b { color: var(--ink); font-weight: 600; }
+  code.inl {
+    font-family: var(--mono); font-size: .88em; background: var(--wire-soft);
+    color: var(--wire); padding: 1.5px 6px; border-radius: 5px;
+  }
+  .note {
+    margin-top: 16px; font-size: 14px; color: var(--muted); border-left: 3px solid var(--wire);
+    padding: 6px 0 6px 14px;
+  }
+  .note b { color: var(--ink-soft); }
+  .split { display: grid; grid-template-columns: 1.05fr 1fr; gap: 22px; align-items: center; }
+  @media (max-width: 860px) { .split { grid-template-columns: 1fr; } }
+
+  /* ---- cover ---- */
+  .slide.cover {
+    background: radial-gradient(120% 100% at 80% 0%, var(--cover-2), var(--cover));
+    color: var(--cover-ink);
+    background-image:
+      linear-gradient(var(--cover-grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--cover-grid) 1px, transparent 1px),
+      radial-gradient(120% 100% at 80% 0%, var(--cover-2), var(--cover));
+    background-size: 44px 44px, 44px 44px, 100% 100%;
+  }
+  .cover .eyebrow { color: var(--accent); }
+  .cover h1.title { color: var(--cover-ink); }
+  .cover .sub { color: #a9bcda; }
+  .cover-foot {
+    font-family: var(--mono); font-size: 13px; color: #8ea6cd; margin-top: 30px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .cover-foot .k { color: var(--accent); }
+
+  /* hub-spoke diagram */
+  .diagram { width: 100%; max-width: 520px; }
+  .diagram text { font-family: var(--mono); }
+
+  .kicker-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 18px; }
+  .repo {
+    font-family: var(--mono); font-size: 13px; color: var(--wire);
+    background: var(--wire-soft); border-radius: 6px; padding: 3px 9px; display: inline-block;
+  }
+  .recap-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 10px 26px; }
+  @media (max-width: 780px){ .recap-grid{ grid-template-columns:1fr; } }
+  .recap-grid .r { display: flex; gap: 12px; align-items: baseline; font-size: 15px; padding: 8px 0; border-bottom: 1px dashed var(--line); }
+  .recap-grid .r .t { font-family: var(--mono); color: var(--accent); font-size: 12.5px; letter-spacing: .04em; white-space: nowrap; }
+  .recap-grid .r .d { color: var(--ink-soft); }
+</style>
+</head>
+<body>
+
+
+<div class="rail"><div class="rail-fill" id="railFill"></div></div>
+<div class="meta">
+  <span id="slideTag">COVER</span>
+  <span class="counter"><span id="cur">1</span>/<span id="total">13</span></span>
+  <button class="theme-btn" id="themeBtn" type="button">THEME</button>
+</div>
+<div class="hint">이동 <b>↓ ↑ / Space</b> · 복사 <b>COPY</b></div>
+
+<div class="deck" id="deck">
+
+  <!-- 1. COVER -->
+  <section class="slide cover" data-tag="COVER">
+    <div class="slide-inner split">
+      <div>
+        <span class="eyebrow">제주연구원 인공지능연구회 · 소모임 · 2026.08.06</span>
+        <h1 class="title">MCP로 도구를<br>AI에 직접 꽂기</h1>
+        <p class="sub">슬랙 · 그룹웨어 · 메일을 내 AI에 연결하고,<br>나만의 스킬(Skill)을 만드는 한 시간짜리 실습.</p>
+        <div class="cover-foot"><span class="k">▶</span> 노트북 켜고 같이 따라오세요. 오늘 쓰는 도구는 전부 우리 github에 있습니다.</div>
+      </div>
+      <div>
+        <svg class="diagram" viewBox="0 0 420 380" role="img" aria-label="AI 에이전트에 슬랙·그룹웨어·메일·먼데이·캘린더가 MCP로 연결된 다이어그램">
+          <defs>
+            <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+              <path d="M0,0 L6,3 L0,6 Z" fill="#4fc2d6"/>
+            </marker>
+          </defs>
+          <!-- wires -->
+          <g stroke="#4fc2d6" stroke-width="1.6" fill="none" opacity="0.85">
+            <path d="M210,190 L70,70"   marker-end="url(#arrow)"/>
+            <path d="M210,190 L350,70"  marker-end="url(#arrow)"/>
+            <path d="M210,190 L40,210"  marker-end="url(#arrow)"/>
+            <path d="M210,190 L380,210" marker-end="url(#arrow)"/>
+            <path d="M210,190 L210,340" marker-end="url(#arrow)"/>
+          </g>
+          <!-- MCP tags on wires -->
+          <g fill="#ec5a2c" font-size="9" font-family="monospace" letter-spacing="1">
+            <text x="120" y="128">MCP</text>
+            <text x="272" y="128">MCP</text>
+            <text x="112" y="196">MCP</text>
+            <text x="284" y="196">MCP</text>
+            <text x="220" y="270">MCP</text>
+          </g>
+          <!-- center node -->
+          <circle cx="210" cy="190" r="46" fill="#0d1a2e" stroke="#ec5a2c" stroke-width="2"/>
+          <text x="210" y="186" fill="#eaf1fb" font-size="13" font-weight="700" text-anchor="middle">AI</text>
+          <text x="210" y="202" fill="#8ea6cd" font-size="9" text-anchor="middle">에이전트</text>
+          <!-- spokes -->
+          <g font-size="11" font-weight="600" text-anchor="middle">
+            <g><rect x="18" y="48" width="104" height="34" rx="8" fill="#10233c" stroke="#33456a"/><text x="70" y="70" fill="#eaf1fb">Slack</text></g>
+            <g><rect x="298" y="48" width="104" height="34" rx="8" fill="#10233c" stroke="#33456a"/><text x="350" y="70" fill="#eaf1fb">그룹웨어</text></g>
+            <g><rect x="0" y="192" width="90" height="34" rx="8" fill="#10233c" stroke="#33456a"/><text x="45" y="214" fill="#eaf1fb">메일</text></g>
+            <g><rect x="330" y="192" width="90" height="34" rx="8" fill="#10233c" stroke="#33456a"/><text x="375" y="214" fill="#eaf1fb">monday</text></g>
+            <g><rect x="158" y="346" width="104" height="30" rx="8" fill="#10233c" stroke="#33456a"/><text x="210" y="366" fill="#eaf1fb">캘린더</text></g>
+          </g>
+        </svg>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. GOAL -->
+  <section class="slide" data-tag="목표">
+    <div class="slide-inner">
+      <span class="eyebrow">오늘의 목표</span>
+      <h2 class="headline">한 시간 뒤, 당신의 AI가<br>회사 도구를 직접 만진다</h2>
+      <div class="grid g3">
+        <div class="card">
+          <h3><span class="num">1</span> 붙인다</h3>
+          <p>Slack·그룹웨어·메일·먼데이를 내 AI(Claude&nbsp;Code / Codex)에 <b>MCP·커넥터</b>로 연결한다.</p>
+        </div>
+        <div class="card">
+          <h3><span class="num">2</span> 만든다</h3>
+          <p>내 반복 업무 명령을 <code class="inl">SKILL.md</code> 한 장으로 <b>나만의 스킬</b>로 만든다.</p>
+        </div>
+        <div class="card">
+          <h3><span class="num">3</span> 나눈다</h3>
+          <p>심링크·MCP 자동등록으로 팀에 <b>플랫폼 안 가리고</b> 배포한다.</p>
+        </div>
+      </div>
+      <p class="note">오늘 쓰는 자산은 전부 우리 <b>github(z0nam)</b>에 공개/사내로 올라가 있습니다. 집에 가서도 그대로 따라 할 수 있게.</p>
+    </div>
+  </section>
+
+  <!-- 3. MCP concept -->
+  <section class="slide" data-tag="개념 ①">
+    <div class="slide-inner split">
+      <div>
+        <span class="eyebrow">개념 ① · MCP</span>
+        <h2 class="headline">MCP = AI에 도구를<br>꽂는 <span style="color:var(--accent)">표준 플러그</span></h2>
+        <p class="lead">USB처럼, 규격을 한 번 맞추면 <b>Claude·Codex·Gemini 어디서든</b> 같은 도구가 꽂힙니다. AI는 그 도구를 "함수"처럼 직접 호출하죠.</p>
+        <p class="note">붙는 길은 크게 <b>두 가지</b> — 오늘 둘 다 해봅니다.</p>
+      </div>
+      <div class="grid" style="gap:14px">
+        <div class="card">
+          <h3>① 원격 커넥터 <span class="badge all" style="margin-left:auto">클릭</span></h3>
+          <p>claude.ai에서 스위치만 켜면 됨. <b>Slack · Gmail · 캘린더 · monday</b>. Claude Code까지 자동 공유.</p>
+        </div>
+        <div class="card">
+          <h3>② 로컬 stdio 서버 <span class="badge mac" style="margin-left:auto">명령</span></h3>
+          <p>프로그램을 내 컴에서 돌리고 <code class="inl">claude mcp add</code>로 등록. <b>서버 하나가 4개 앱을</b> 먹는다.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. Skill concept + two patterns -->
+  <section class="slide" data-tag="개념 ②">
+    <div class="slide-inner">
+      <span class="eyebrow">개념 ② · Skill</span>
+      <h2 class="headline">Skill = "이 도구 언제·어떻게 쓰나"<br>AI에게 주는 사용설명서</h2>
+      <div class="grid g2">
+        <div class="card">
+          <h3>📄 SKILL.md 패턴</h3>
+          <p>PATH에 셸 명령(CLI)을 깔고, 사용법을 적은 <code class="inl">SKILL.md</code> 한 장을 skills 폴더에 심링크. AI가 알아서 <code class="inl">Bash</code>로 부른다.</p>
+          <p style="margin-top:10px;color:var(--muted);font-size:14px">→ messages · contacts · gw · mail</p>
+        </div>
+        <div class="card">
+          <h3>🔌 MCP 서버 패턴</h3>
+          <p>프로그램을 stdio로 감싸 <code class="inl">claude mcp add</code>로 등록. AI가 툴(함수)로 직접 호출. 인자·반환이 구조화됨.</p>
+          <p style="margin-top:10px;color:var(--muted);font-size:14px">→ korea-rio-mcp (messages도 가능)</p>
+        </div>
+      </div>
+      <p class="note"><b>가벼운 셸 명령 = 스킬</b> · <b>구조화된 함수·크로스플랫폼 = MCP</b>. 오늘은 둘 다 손으로 만져봅니다.</p>
+    </div>
+  </section>
+
+  <!-- 5. Prereqs -->
+  <section class="slide" data-tag="준비물">
+    <div class="slide-inner split">
+      <div>
+        <span class="eyebrow">사전 세팅 · 5분</span>
+        <h2 class="headline">준비물</h2>
+        <ul class="check">
+          <li><b>Claude Code 또는 Codex CLI</b> 설치 + 로그인 (AI 구독)</li>
+          <li><b>git · gh · node</b> (없으면 실습 일부만)</li>
+          <li><code class="inl">~/.local/bin</code> 이 <b>PATH</b>에 있을 것 — 스킬 CLI가 여기 깔림</li>
+          <li>(맥) 실습별 권한: 터미널에 <b>Full Disk Access</b> 등</li>
+        </ul>
+      </div>
+      <div>
+        <div class="code">
+          <button class="copy" type="button">COPY</button>
+          <div class="code-head"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="fname">check-env.sh</span></div>
+<pre><span class="c"># 작업 폴더 + 로컬 bin 준비</span>
+<span class="k">mkdir</span> -p ~/dev ~/.local/bin
+
+<span class="c"># PATH에 ~/.local/bin 있는지 확인</span>
+<span class="k">echo</span> <span class="s">$PATH</span> | tr <span class="s">':'</span> <span class="s">'\n'</span> | grep -q <span class="s">"$HOME/.local/bin"</span> \
+  &amp;&amp; <span class="k">echo</span> <span class="s">"OK"</span> || <span class="k">echo</span> <span class="s">"PATH에 추가 필요"</span></pre>
+        </div>
+        <p class="note">없으면 <code class="inl">~/.zshrc</code>에 <code class="inl">export PATH="$HOME/.local/bin:$PATH"</code> 한 줄.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. Slack -->
+  <section class="slide" data-tag="실습 A · SLACK">
+    <div class="slide-inner">
+      <div class="kicker-row"><span class="eyebrow" style="margin:0">실습 A · Slack</span><span class="badge all">모두 따라하기</span></div>
+      <h2 class="headline">슬랙을 5분 만에 붙인다</h2>
+      <div class="grid g2">
+        <div class="card">
+          <h3>길 ① — 플러그인</h3>
+          <div class="code">
+            <button class="copy" type="button">COPY</button>
+            <div class="code-head"><span class="dot"></span><span class="fname">Claude Code</span></div>
+<pre><span class="k">/plugin</span> marketplace add <span class="s">anthropics/claude-plugins-official</span>
+<span class="k">/plugin</span> install <span class="s">slack@claude-plugins-official</span></pre>
+          </div>
+          <p style="font-size:14px;color:var(--muted)">설치 후 인증(OAuth) → 채널 읽기·검색·보내기 툴 활성.</p>
+        </div>
+        <div class="card">
+          <h3>길 ② — 커넥터</h3>
+          <p>claude.ai → <b>Settings → Connectors</b>에서 Slack 켜기. Claude Code와 <b>자동 공유</b>됩니다 (2.1.46+).</p>
+          <p style="margin-top:12px;font-size:14px;color:var(--muted)">확인: <code class="inl">/mcp</code> 또는 <br>"슬랙 #공지 최근 글 요약해줘"</p>
+        </div>
+      </div>
+      <p class="note">회사 슬랙의 채널ID·유저UID는 <b>slack-directory</b> 스킬로 로컬 캐시해두고 <code class="inl">grep</code>합니다 (API 호출 절약).</p>
+    </div>
+  </section>
+
+  <!-- 7. Connectors: monday + calendar + worklog -->
+  <section class="slide" data-tag="실습 A+ · 커넥터">
+    <div class="slide-inner split">
+      <div>
+        <div class="kicker-row"><span class="eyebrow" style="margin:0">실습 A+ · 커넥터</span><span class="badge all">클릭</span></div>
+        <h2 class="headline">클릭 한 번으로<br>붙는 것들</h2>
+        <p class="lead">claude.ai <b>Connectors</b>에서 켜면 Claude Code까지 공유됩니다:
+        <b>Google Calendar · Gmail · Slack · monday.com</b>.</p>
+        <p class="note">monday는 로컬로도 — <code class="inl">claude mcp add monday …</code> 또는 <code class="inl">.mcp.json</code>.</p>
+      </div>
+      <div>
+        <div class="card" style="margin-bottom:14px">
+          <h3>실사례 · calendar-worklog <span class="repo" style="margin-left:auto">z0nam/calendar-worklog</span></h3>
+          <p>이 커넥터들을 <b>조합</b>해서, 흩어진 활동을 캘린더에 업무일지로 자동 기록하는 오케스트레이션 스킬.</p>
+        </div>
+        <div class="code">
+          <button class="copy" type="button">COPY</button>
+          <div class="code-head"><span class="dot"></span><span class="fname">plugin marketplace</span></div>
+<pre><span class="k">/plugin</span> marketplace add <span class="s">z0nam/calendar-worklog</span>
+<span class="k">/plugin</span> install <span class="s">calendar-worklog-ji@calendar-worklog</span>
+<span class="c"># 이후: /worklog day | week | now</span></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8. Groupware -->
+  <section class="slide" data-tag="실습 B · 그룹웨어">
+    <div class="slide-inner">
+      <div class="kicker-row"><span class="eyebrow" style="margin:0">실습 B · 그룹웨어</span><span class="badge deep">사내 사례</span><span class="badge deep">심화</span></div>
+      <h2 class="headline">레거시 그룹웨어도 AI가 만진다</h2>
+      <div class="split">
+        <div>
+          <p class="lead" style="margin-bottom:16px">그룹웨어를 <b>CLI+어댑터</b>로 감싸고 <code class="inl">SKILL.md</code>로 노출. MCP가 아니어도 됩니다. 우리 GW에 맞춰 <b>어댑터만</b> 갈면 다른 그룹웨어로 확장.</p>
+          <ul class="check">
+            <li>결재 알림이 <b>Slack DM으로</b> → 그룹웨어↔슬랙이 한 흐름</li>
+            <li>상신 같은 <b>위험 행위는 사람이</b> (기안 직전 정지)</li>
+            <li>자격증명·내부망 IP는 화면 밖 — 오늘은 <b>패턴</b>만</li>
+          </ul>
+        </div>
+        <div class="code">
+          <button class="copy" type="button">COPY</button>
+          <div class="code-head"><span class="dot"></span><span class="fname">gw · (사내) ji-gw-ai</span></div>
+<pre><span class="k">gw</span> approvals              <span class="c"># 결재함 읽기</span>
+<span class="k">gw</span> download <span class="s">&lt;wscNo&gt;</span> --dm  <span class="c"># 본문 → Slack DM</span>
+<span class="k">gw</span> late-check --draft    <span class="c"># 출근대조→지참 기안</span>
+<span class="k">gw</span> budget                 <span class="c"># 과제 예산 잔액</span></pre>
+        </div>
+      </div>
+      <p class="note">패턴 요지: <b>레거시 시스템 ← CLI/어댑터 ← SKILL.md</b>. 웹만 있는 낡은 시스템도 이렇게 AI에 붙습니다.</p>
+    </div>
+  </section>
+
+  <!-- 9. Mail -->
+  <section class="slide" data-tag="실습 C · 메일">
+    <div class="slide-inner">
+      <div class="kicker-row"><span class="eyebrow" style="margin:0">실습 C · 메일</span><span class="repo">z0nam/mail-skill</span><span class="badge deep">심화</span></div>
+      <h2 class="headline">메일을 <span style="color:var(--wire)">백엔드 중립</span>으로 묶는다</h2>
+      <div class="split">
+        <div>
+          <p class="lead" style="margin-bottom:14px">엔진(Himalaya)을 <b>어댑터 뒤에 숨긴</b> 5-verb 계약. 엔진을 바꿔도 <code class="inl">bin/mailskill</code> 한 파일만 고치면 사용법은 그대로.</p>
+          <div class="code">
+            <button class="copy" type="button">COPY</button>
+            <div class="code-head"><span class="dot"></span><span class="fname">설치 개요</span></div>
+<pre><span class="k">brew</span> install <span class="s">himalaya age</span>
+~/dev/mail-skill/scripts/<span class="k">bootstrap.sh</span>
+<span class="c"># age키+심링크 → 계정 앱비번 등록</span></pre>
+          </div>
+        </div>
+        <div class="code">
+          <button class="copy" type="button">COPY</button>
+          <div class="code-head"><span class="dot"></span><span class="fname">5-verb 계약</span></div>
+<pre><span class="k">mailskill</span> accounts
+<span class="k">mailskill</span> list   <span class="s">&lt;acct&gt; 10</span>
+<span class="k">mailskill</span> search <span class="s">&lt;acct&gt; &lt;query&gt;</span>
+<span class="k">mailskill</span> read   <span class="s">&lt;acct&gt; &lt;id&gt;</span>
+<span class="k">mailskill</span> reply  <span class="s">&lt;acct&gt; &lt;id&gt;</span> <span class="c"># 초안만</span></pre>
+        </div>
+      </div>
+      <p class="note">3갈래 라우팅: 주 Gmail은 <b>커넥터</b>, 그 외 IMAP은 <b>어댑터</b>, 과거메일은 <b>로컬 Maildir</b>. 시크릿은 age 암호화(평문 없음).</p>
+    </div>
+  </section>
+
+  <!-- 10. MCP server -->
+  <section class="slide" data-tag="실습 D · MCP 서버">
+    <div class="slide-inner">
+      <div class="kicker-row"><span class="eyebrow" style="margin:0">실습 D · MCP 서버</span><span class="badge all">모두</span><span class="badge mac">맥 · 윈도우 공통</span></div>
+      <h2 class="headline">MCP 서버를 직접 꽂아본다</h2>
+      <p class="lead" style="margin-bottom:6px"><span class="repo">z0nam/korea-rio-mcp</span> — 지역 경제파급효과를 계산하는 크로스플랫폼 MCP 서버. <b>서버 하나가 세 플랫폼을</b> 먹습니다.</p>
+      <div class="grid g3">
+        <div class="code">
+          <button class="copy" type="button">COPY</button>
+          <div class="code-head"><span class="dot"></span><span class="fname">Claude Code</span></div>
+<pre><span class="k">uv</span> tool install <span class="s">git+https://github.com/\
+z0nam/korea-rio-mcp</span>
+
+<span class="k">claude</span> mcp add <span class="s">korea-rio</span> \
+  -- <span class="s">korea-rio-mcp</span></pre>
+        </div>
+        <div class="code">
+          <button class="copy" type="button">COPY</button>
+          <div class="code-head"><span class="dot"></span><span class="fname">~/.codex/config.toml</span></div>
+<pre><span class="s">[mcp_servers.korea_rio]</span>
+command = <span class="s">"korea-rio-mcp"</span></pre>
+        </div>
+        <div class="code">
+          <button class="copy" type="button">COPY</button>
+          <div class="code-head"><span class="dot"></span><span class="fname">~/.gemini/settings.json</span></div>
+<pre>{ <span class="s">"mcpServers"</span>: {
+  <span class="s">"korea-rio"</span>: {
+    <span class="s">"command"</span>: <span class="s">"korea-rio-mcp"</span> }}}</pre>
+        </div>
+      </div>
+      <p class="note">확인: <code class="inl">claude mcp list</code> → <b style="color:var(--good)">✔ Connected</b>. 그다음 "서귀포에 100억 투자하면 생산유발효과?"라고 물어보세요.</p>
+    </div>
+  </section>
+
+  <!-- 11. Make your own skill ★ -->
+  <section class="slide" data-tag="실습 E · 나만의 스킬">
+    <div class="slide-inner">
+      <div class="kicker-row"><span class="eyebrow" style="margin:0">실습 E · 나만의 스킬</span><span class="badge live">라이브 데모 ★</span></div>
+      <h2 class="headline">SKILL.md 한 장 + 심링크 두 줄</h2>
+      <div class="split">
+        <div class="code">
+          <button class="copy" type="button">COPY</button>
+          <div class="code-head"><span class="dot"></span><span class="fname">.claude/skills/mytool/SKILL.md</span></div>
+<pre><span class="c">---</span>
+name: <span class="s">mytool</span>
+description: <span class="s">무슨 일을 하는지 + "언제</span>
+  <span class="s">이 스킬을 쓰는지" 트리거 문장.</span>
+  <span class="s">"OO 해줘" 같은 발화가 오면 먼저</span>
+  <span class="s">이 스킬을 본다.</span>
+<span class="c">---</span>
+
+<span class="c"># mytool</span>
+## 명령
+<span class="s">mytool run &lt;arg&gt;</span>  <span class="c"># 하는 일</span>
+## 안전수칙
+쓰기·삭제는 <span class="s">사용자 승인 후</span>.</pre>
+        </div>
+        <div>
+          <p class="lead" style="margin-bottom:14px">본보기는 <span class="repo">z0nam/messages-cli</span>. 핵심은 <b>frontmatter의 description</b> — "언제 쓰는지"를 잘 써야 AI가 알아서 집어듭니다.</p>
+          <div class="code">
+            <button class="copy" type="button">COPY</button>
+            <div class="code-head"><span class="dot"></span><span class="fname">심링크 = SSOT (한 원본, 양쪽 공유)</span></div>
+<pre><span class="c"># CLI를 PATH에</span>
+<span class="k">ln</span> -sf <span class="s">"$PWD/mytool"</span> ~/.local/bin/mytool
+<span class="c"># SKILL.md 하나를 Claude+Codex 양쪽에</span>
+<span class="k">ln</span> -sf <span class="s">"$PWD/.claude/skills/mytool"</span> \
+  ~/.claude/skills/mytool
+<span class="k">ln</span> -sf <span class="s">"$PWD/.claude/skills/mytool"</span> \
+  ~/.codex/skills/mytool</pre>
+          </div>
+        </div>
+      </div>
+      <p class="note">원본 <b>한 곳만</b> 고치면 Claude·Codex 양쪽에 반영. 이게 우리 도구들이 두 에이전트를 동시에 지원하는 비결.</p>
+    </div>
+  </section>
+
+  <!-- 12. Deploy doctrine -->
+  <section class="slide" data-tag="배포 · 확장">
+    <div class="slide-inner">
+      <span class="eyebrow">배포 · 확장 · <span style="color:var(--muted)">(사내) ji-deploy-standards</span></span>
+      <h2 class="headline">팀에 나눌 땐 두 원칙</h2>
+      <div class="grid g2">
+        <div class="card">
+          <h3><span class="num">1</span> 플랫폼 프리</h3>
+          <p>AI 구독만 있으면 <b>Claude·Codex·Gemini 동일</b>하게. 로컬 stdio MCP <b>하나 = 데스크톱·CLI 넷</b>을 한 번에 커버.</p>
+        </div>
+        <div class="card">
+          <h3><span class="num">2</span> "설치 수준" UX</h3>
+          <p>컴 잘 모르는 연구원도 <b>프로그램 설치 한 번</b> 경험으로. 등록은 <code class="inl">setup</code> 명령이 각 config에 <b>멱등 주입</b>.</p>
+        </div>
+      </div>
+      <div class="grid g2" style="margin-top:16px">
+        <div class="card" style="background:var(--card-2)">
+          <h3 style="color:var(--wire)">🖥️ 개발자·데스크톱</h3>
+          <p>로컬 <b>stdio MCP</b> + <b>심링크 SSOT</b> 스킬.</p>
+        </div>
+        <div class="card" style="background:var(--card-2)">
+          <h3 style="color:var(--wire)">💬 소비자 챗앱</h3>
+          <p>ChatGPT·Gemini앱은 로컬 MCP 불가 → <b>자체호스팅 웹링크(HTTP)</b>로 우회.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 13. Recap -->
+  <section class="slide" data-tag="정리">
+    <div class="slide-inner">
+      <span class="eyebrow">정리 · 집에서 이어서</span>
+      <h2 class="headline">오늘 꽂은 것 / 자산 목록</h2>
+      <div class="recap-grid">
+        <div class="r"><span class="t">Slack</span><span class="d">플러그인 or 커넥터</span></div>
+        <div class="r"><span class="t">calendar-worklog</span><span class="d">커넥터 오케스트레이션 · 공개</span></div>
+        <div class="r"><span class="t">gw / ji-gw-ai</span><span class="d">그룹웨어 어댑터+CLI · 사내</span></div>
+        <div class="r"><span class="t">mail-skill</span><span class="d">백엔드 중립 메일 · 공개</span></div>
+        <div class="r"><span class="t">korea-rio-mcp</span><span class="d">순수 stdio MCP 서버 · 공개</span></div>
+        <div class="r"><span class="t">messages / contacts</span><span class="d">SKILL.md 본보기 · 공개</span></div>
+        <div class="r"><span class="t">hwp-agent</span><span class="d">HWP 편집 CLI/MCP · 공개</span></div>
+        <div class="r"><span class="t">ji-deploy-standards</span><span class="d">배포 규약 SSOT · 사내</span></div>
+      </div>
+      <p class="note" style="margin-top:22px;font-size:16px;border-color:var(--accent)"><b>다음 숙제:</b> 내 반복 업무 명령 <b>하나</b>를 골라 <code class="inl">SKILL.md</code>로 만들어 오기. 다음 소모임에서 서로 보여주기.</p>
+      <p style="font-family:var(--mono);color:var(--muted);font-size:13px;margin-top:20px">github.com/z0nam · 제주연구원 인공지능연구회 · 2026.08.06 노꼬메</p>
+    </div>
+  </section>
+
+</div>
+
+<script>
+  (function () {
+    var deck = document.getElementById('deck');
+    var slides = Array.prototype.slice.call(deck.querySelectorAll('.slide'));
+    var railFill = document.getElementById('railFill');
+    var curEl = document.getElementById('cur');
+    var tagEl = document.getElementById('slideTag');
+    document.getElementById('total').textContent = slides.length;
+    var idx = 0;
+
+    function update() {
+      var y = deck.scrollTop;
+      var h = deck.clientHeight;
+      idx = Math.round(y / h);
+      if (idx < 0) idx = 0;
+      if (idx > slides.length - 1) idx = slides.length - 1;
+      curEl.textContent = idx + 1;
+      tagEl.textContent = (slides[idx].getAttribute('data-tag') || '').toUpperCase();
+      var denom = (slides.length - 1) || 1;
+      railFill.style.height = (idx / denom * 100) + '%';
+    }
+    deck.addEventListener('scroll', function () { window.requestAnimationFrame(update); }, { passive: true });
+
+    function go(n) {
+      idx = Math.max(0, Math.min(slides.length - 1, n));
+      slides[idx].scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    document.addEventListener('keydown', function (e) {
+      if (['ArrowDown', 'PageDown', ' ', 'ArrowRight'].indexOf(e.key) !== -1) { e.preventDefault(); go(idx + 1); }
+      else if (['ArrowUp', 'PageUp', 'ArrowLeft'].indexOf(e.key) !== -1) { e.preventDefault(); go(idx - 1); }
+      else if (e.key === 'Home') { e.preventDefault(); go(0); }
+      else if (e.key === 'End') { e.preventDefault(); go(slides.length - 1); }
+    });
+
+    // copy buttons
+    deck.querySelectorAll('.copy').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var pre = btn.parentElement.querySelector('pre');
+        var text = pre ? pre.innerText : '';
+        var done = function () { btn.textContent = '복사됨'; setTimeout(function () { btn.textContent = 'COPY'; }, 1400); };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(done, done);
+        } else { done(); }
+      });
+    });
+
+    // theme toggle
+    var root = document.documentElement;
+    document.getElementById('themeBtn').addEventListener('click', function () {
+      var cur = root.getAttribute('data-theme');
+      if (!cur) { cur = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; }
+      root.setAttribute('data-theme', cur === 'dark' ? 'light' : 'dark');
+    });
+
+    update();
+  })();
+</script>
+
+</body>
+</html>
