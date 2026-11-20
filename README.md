@@ -14,6 +14,7 @@
 각 모임 자료는 `YYYY-MM-DD-주제/` 폴더로 정리합니다.
 
 ### 최근 자료
+- [2026-11-20 소모임: LLM Wiki·옵시디언 교육 준비](./study-group/2026-11-20-llm-wiki-obsidian/README.md) — 「쌓아만 둔 메모, 다시 꺼내 쓰기」 주최 측 검토안 요약(강사 확정교안·행사 후 결과 아님)
 - **2026-08-06 소모임: MCP로 그룹웨어/슬랙/메일 연결 및 스킬(Skill) 실습** — 같은 주제를 두 에이전트가 각각 생성한 자료 병존(비교용):
   - [Claude Code 판](./study-group/2026-08-06-claudecode-mcp-skills-integration) ([🌐 라이브 슬라이드](https://z0nam.github.io/ji-ai-study/study-group/2026-08-06-claudecode-mcp-skills-integration/slides.html)) — 커넥터 / 로컬 MCP 서버 / SKILL.md 세 연결방식 실습, 우리 github 공개 자산 기반
   - [Antigravity 판](./study-group/2026-08-06-antigravity-mcp-skills-integration) ([🌐 라이브 슬라이드](https://z0nam.github.io/ji-ai-study/study-group/2026-08-06-antigravity-mcp-skills-integration/slides.html)) — MCP/스킬 4종 실습 가이드
