@@ -1,2 +1,5 @@
 .DS_Store
 ~$*
+
+# 영수증·정산 등 행정 자료는 로컬에만 보관한다.
+/administration/
