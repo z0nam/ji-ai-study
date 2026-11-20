@@ -50,7 +50,7 @@
 - 운영 논의
   - 전체 모임 일정: 11/10 이후 적당한 목요일 17시에 하기로
   - 배정 예산 40만원 사용 방법 후보
-    - AI 녹음기(약 4.6만원, 초소형·최대 30시간 녹음) — 미니컴퓨터는 예산 부족
+    - [AI 녹음기](https://www.coupang.com/vp/products/7786086645?vendorItemId=88116228517)(약 4.6만원, 초소형·최대 30시간 녹음) — 미니컴퓨터는 예산 부족
     - 모니터 3–4대, HDMI 등 부자재
     - 강사료: LLM-wiki 강사 섭외 문의 — 오프라인 가능, 2시간 30분 내외, 약 20만원. 11/19(목) 가능 여부 일정 조율 필요
     - 다과(당연), 기타 연구회 기자재
@@ -167,6 +167,7 @@
 
 - 『밑바닥부터 시작하는 딥러닝』 2권 마무리 후 다음 방향 정하기
 - 다음 모임: 12/22 17:00 노꼬메 — 4.2.5 네거티브 샘플링 ~ 4장 완료 목표
+- Google Meet: https://meet.google.com/knu-quqk-bte
 - 참고 자료
   - 주텍스트 2권 소스: https://github.com/WegraLee/deep-learning-from-scratch-2
   - 주텍스트 1권: https://github.com/WegraLee/deep-learning-from-scratch (수식·그림 모음 포함, 강의 영상도 공개)
