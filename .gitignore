@@ -3,3 +3,8 @@
 
 # 영수증·정산 등 행정 자료는 로컬에만 보관한다.
 /administration/
+
+# LLM 위키 개인 연습 공간 및 Obsidian 로컬 작업 상태는 Git 추적에서 제외한다.
+/llm-wiki/내연습/
+/llm-wiki/.obsidian/workspace.json
+/llm-wiki/.obsidian/workspace-mobile.json
